@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acode Global Chat</title>
+    <style>
+        /* --- GAYA TAMPILAN (CSS) --- */
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #e5ddd5; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+        }
+        .chat-container { 
+            width: 100%; 
+            max-width: 450px; 
+            height: 90vh; 
+            background: #ffffff; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
+        .chat-header { 
+            background: #075e54; 
+            color: white; 
+            padding: 15px; 
+            text-align: center; 
+            font-size: 1.2rem; 
+            font-weight: bold; 
+        }
+        .chat-box { 
+            flex: 1; 
+            padding: 15px; 
+            overflow-y: auto; 
+            background: #efeae2; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+        }
+        .message { 
+            background: white; 
+            padding: 8px 12px; 
+            border-radius: 8px; 
+            max-width: 80%; 
+            width: fit-content; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
+            animation: fadeIn 0.3s ease; 
+        }
+        .message.own {
+            background: #d9fdd3;
+            align-self: flex-end;
+        }
+        .message strong { 
+            display: block; 
+            color: #128c7e; 
+            font-size: 0.85rem; 
+            margin-bottom: 2px; 
+        }
+        .message p {
+            font-size: 0.95rem;
+            color: #333;
+            word-break: break-word;
+        }
+        .chat-input-area { 
+            padding: 10px; 
+            display: flex; 
+            background: #f0f2f5; 
+            gap: 8px; 
+            align-items: center; 
+        }
+        #usernameInput {
+            width: 80px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        #msgInput { 
+            flex: 1; 
+            padding: 10px 15px; 
+            border: 1px solid #ccc; 
+            border-radius: 20px; 
+            outline: none; 
+            font-size: 0.95rem; 
+        }
+        #sendBtn { 
+            padding: 10px 18px; 
+            background: #00a884; 
+            color: white; 
+            border: none; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 0.9rem; 
+        }
+        #sendBtn:hover { background: #075e54; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">Global Chat Room</div>
+        <div class="chat-box" id="chatBox"></div>
+        <div class="chat-input-area">
+            <!-- Input Nama Pengguna Otomatis Digenerate, Bisa Diubah -->
+            <input type="text" id="usernameInput" value="User">
+            <input type="text" id="msgInput" placeholder="Ketik pesan..." autocomplete="off">
+            <button id="sendBtn">Kirim</button>
+        </div>
+    </div>
+
+    <!-- --- LOGIKA REAL-TIME (JAVASCRIPT) --- -->
+    <script type="module">
+        // Import Firebase SDK langsung dari CDN online
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyD5oit38kpsPgOPQN57hd0WDWSSeDjFhrQ",
+    authDomain: "flutter-ai-playground-7de84.firebaseapp.com",
+    projectId: "flutter-ai-playground-7de84",
+    storageBucket: "flutter-ai-playground-7de84.firebasestorage.app",
+    messagingSenderId: "934677362975",
+    appId: "1:934677362975:web:e2746106bd148c6992182a"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+
+        // Inisialisasi Firebase & Database
+        const db = getDatabase(app);
+        const chatRef = ref(db, "pesan_global");
+
+        // Ambil elemen HTML
+        const chatBox = document.getElementById("chatBox");
+        const msgInput = document.getElementById("msgInput");
+        const usernameInput = document.getElementById("usernameInput");
+        const sendBtn = document.getElementById("sendBtn");
+
+        // Membuat ID acak di belakang nama "User" agar tidak kembar saat pertama buka
+        const randomId = Math.floor(1000 + Math.random() * 9000);
+        usernameInput.value = "User_" + randomId;
+
+        // Fungsi untuk mengirim data ke Firebase
+        function kirimPesan() {
+            const pesanTeks = msgInput.value.trim();
+            const namaUser = usernameInput.value.trim() || "Anonim";
+
+            if (pesanTeks !== "") {
+                // Menambahkan data baru ke dalam cabang 'pesan_global' di Firebase
+                push(chatRef, {
+                    nama: namaUser,
+                    pesan: pesanTeks,
+                    timestamp: Date.now()
+                });
+                msgInput.value = ""; // Mengosongkan input setelah kirim
+            }
+        }
+
+        // Jalankan fungsi kirim saat tombol diklik atau menekan Enter
+        sendBtn.addEventListener("click", kirimPesan);
+        msgInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") kirimPesan();
+        });
+
+        // Event Listener: Otomatis mendeteksi jika ada pesan baru masuk ke Firebase
+        onChildAdded(chatRef, (snapshot) => {
+            const data = snapshot.val();
+            const namaUser Sekarang = usernameInput.value.trim();
+            
+            // Cek apakah pesan berasal dari diri sendiri untuk membedakan warna bubble chat
+            const isOwnMessage = data.nama === namaUserSekarang;
+
+            // Membuat elemen HTML untuk bubble chat baru
+            const msgDiv = document.createElement("div");
+            msgDiv.classList.add("message");
+            if (isOwnMessage) {
+                msgDiv.classList.add("own");
+            }
+
+            msgDiv.innerHTML = `<strong>${data.nama}</strong><p>${data.pesan}</p>`;
+            
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight; // Geser otomatis ke bawah jika ada pesan baru
+        });
+    </script>
+</body>
+</html>
